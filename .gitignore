@@ -1,0 +1,15 @@
+# Large data files
+candidates.jsonl
+candidates.jsonl.gz
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# OS files
+.DS_Store

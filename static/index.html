@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redrob Talent Discovery & Candidate Ranker Dashboard</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fa-solid fa-brain-circuit logo-icon"></i>
+                    <span>Redrob AI</span>
+                </div>
+                <span class="badge badge-primary version-tag">Founding Team Ranker</span>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item active" id="menu-dashboard">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Discovery Board</span>
+                </a>
+                <a href="#" class="menu-item" id="menu-candidates-list">
+                    <i class="fa-solid fa-users-viewfinder"></i>
+                    <span>All Candidates</span>
+                </a>
+                <a href="#" class="menu-item" id="menu-submission">
+                    <i class="fa-solid fa-file-export"></i>
+                    <span>Generate Submission</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="honeypot-control">
+                    <div class="toggle-container">
+                        <span class="toggle-label"><i class="fa-solid fa-shield-halved"></i> Exclude Honeypots</span>
+                        <label class="switch">
+                            <input type="checkbox" id="honeypot-toggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="user-profile">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="Recruiter Avatar" class="avatar" id="avatar-img">
+                    <div class="user-info">
+                        <span class="user-name">Vaishnav N.</span>
+                        <span class="user-role">Head of Talent Acquisition</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- Header section -->
+            <header class="app-header">
+                <div class="header-title">
+                    <h1>Senior AI Engineer — Founding Team</h1>
+                    <p class="subtitle">Discovery and ranking dashboard for Pune/Noida hybrid role (5–9 Years experience)</p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btn-run-ranker">
+                        <i class="fa-solid fa-play"></i> Run Ranker Pipeline
+                    </button>
+                </div>
+            </header>
+
+            <!-- Metrics Overview Cards -->
+            <section class="metrics-grid">
+                <div class="card metric-card animate-fade-in">
+                    <div class="metric-icon bg-blue-light"><i class="fa-solid fa-users text-blue"></i></div>
+                    <div class="metric-info">
+                        <span class="metric-title">Total Talent Pool</span>
+                        <h3 class="metric-value" id="stat-total-pool">-</h3>
+                        <span class="metric-trend text-muted">Candidates scanned</span>
+                    </div>
+                </div>
+                <div class="card metric-card animate-fade-in" style="animation-delay: 0.1s">
+                    <div class="metric-icon bg-green-light"><i class="fa-solid fa-user-check text-green"></i></div>
+                    <div class="metric-info">
+                        <span class="metric-title">Scored Matches</span>
+                        <h3 class="metric-value" id="stat-valid-count">-</h3>
+                        <span class="metric-trend text-green"><i class="fa-solid fa-arrow-trend-up"></i> Valid profiles</span>
+                    </div>
+                </div>
+                <div class="card metric-card animate-fade-in" style="animation-delay: 0.2s">
+                    <div class="metric-icon bg-red-light"><i class="fa-solid fa-bug text-red"></i></div>
+                    <div class="metric-info">
+                        <span class="metric-title">Honeypots Caught</span>
+                        <h3 class="metric-value text-red" id="stat-honeypot-count">-</h3>
+                        <span class="metric-trend text-red"><i class="fa-solid fa-triangle-exclamation"></i> 0% allowed in Top 100</span>
+                    </div>
+                </div>
+                <div class="card metric-card animate-fade-in" style="animation-delay: 0.3s">
+                    <div class="metric-icon bg-purple-light"><i class="fa-solid fa-truck-ramp-box text-purple"></i></div>
+                    <div class="metric-info">
+                        <span class="metric-title">Relocation Rate</span>
+                        <h3 class="metric-value" id="stat-relocation-rate">-</h3>
+                        <span class="metric-trend text-muted">Willing to move to Pune/Noida</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Filter Controls Panel -->
+            <section class="filter-panel card animate-fade-in" style="animation-delay: 0.4s">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Search by name, headline, summary, skills or company...">
+                </div>
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label for="work-mode-filter">Work Mode</label>
+                        <select id="work-mode-filter">
+                            <option value="all">All Modes</option>
+                            <option value="onsite">Onsite Only</option>
+                            <option value="hybrid">Hybrid Only</option>
+                            <option value="remote">Remote Only</option>
+                            <option value="flexible">Flexible Only</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group select-wrapper">
+                        <label for="sort-select">Sort By</label>
+                        <select id="sort-select">
+                            <option value="rank">Recommended (Rank)</option>
+                            <option value="score">Match Score</option>
+                            <option value="experience">Years of Experience</option>
+                            <option value="notice_period">Notice Period</option>
+                            <option value="response_rate">Recruiter Response Rate</option>
+                            <option value="connections">Platform Connections</option>
+                            <option value="github">GitHub Contribution Score</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group select-wrapper">
+                        <label for="order-select">Order</label>
+                        <select id="order-select">
+                            <option value="asc">Ascending</option>
+                            <option value="desc" selected>Descending</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group range-group">
+                        <label>Experience (Years)</label>
+                        <div class="range-inputs">
+                            <input type="number" id="min-exp-input" placeholder="Min" min="0" max="50">
+                            <span class="range-separator">-</span>
+                            <input type="number" id="max-exp-input" placeholder="Max" min="0" max="50">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button class="btn btn-secondary" id="btn-reset-filters">
+                            <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Candidates Grid / Table -->
+            <section class="candidates-section">
+                <div class="section-header">
+                    <h2>Scored Shortlist</h2>
+                    <span class="results-count" id="results-count-text">Showing 0 candidates</span>
+                </div>
+
+                <div class="loader-container" id="candidates-loader">
+                    <div class="spinner"></div>
+                    <p>Scanning talent pool...</p>
+                </div>
+
+                <div class="candidates-grid" id="candidates-container">
+                    <!-- Cards injected via JavaScript -->
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination-container">
+                    <button class="btn btn-icon" id="btn-prev-page" disabled><i class="fa-solid fa-chevron-left"></i></button>
+                    <span class="page-info" id="page-info-text">Page 1 of 1</span>
+                    <button class="btn btn-icon" id="btn-next-page" disabled><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Candidate Detailed Profile Modal -->
+    <div class="modal" id="candidate-modal">
+        <div class="modal-content card">
+            <span class="close-modal" id="btn-close-modal">&times;</span>
+            <div id="modal-body-content">
+                <!-- Injected via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Submission Generation Overlay / Modal -->
+    <div class="modal" id="submission-modal">
+        <div class="modal-content card" style="max-width: 600px;">
+            <span class="close-modal" id="btn-close-submission-modal">&times;</span>
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-file-export text-blue"></i> Submission Pipeline</h2>
+                <p class="subtitle">Runs the ranking engine, creates submission CSV, and executes challenge validator checks.</p>
+            </div>
+            <div class="modal-body">
+                <div class="pipeline-steps">
+                    <div class="step" id="step-rank">
+                        <div class="step-icon"><i class="fa-solid fa-play"></i></div>
+                        <div class="step-content">
+                            <h4>Run Offline Heuristic Matcher</h4>
+                            <p>Parses candidates.jsonl (100,000 profiles), scores experience, skills, titles, and filters honeypots.</p>
+                        </div>
+                    </div>
+                    <div class="step" id="step-csv">
+                        <div class="step-icon"><i class="fa-solid fa-file-csv"></i></div>
+                        <div class="step-content">
+                            <h4>Write submission.csv</h4>
+                            <p>Creates a valid CSV with exactly 100 rows, sorted ranks, non-increasing scores, and realistic reasoning justification.</p>
+                        </div>
+                    </div>
+                    <div class="step" id="step-validate">
+                        <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
+                        <div class="step-content">
+                            <h4>Run validate_submission.py</h4>
+                            <p>Runs official validation check. Checks structure, data types, constraints, non-increasing scores, and ties breaking.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pipeline-output" id="pipeline-output-container" style="display: none;">
+                    <h5>Console Output:</h5>
+                    <pre id="pipeline-console-log"></pre>
+                </div>
+
+                <div class="pipeline-actions">
+                    <button class="btn btn-primary" id="btn-pipeline-run" style="width: 100%;">
+                        <i class="fa-solid fa-play"></i> Run Pipeline and Validate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
