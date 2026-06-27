@@ -11,22 +11,21 @@ from typing import List, Optional
 from datetime import datetime
 
 # Import scoring functions from rank
-from rank import calculate_score, generate_reasoning, TARGET_DATE
+from rank import calculate_score, generate_reasoning, TARGET_DATE, ROLE_CONFIGS
 
 app = FastAPI(title="Redrob Candidate Ranker Dashboard")
 
-# Global state to hold candidates and pre-computed ranks
+# Global state to hold candidates and pre-computed ranks per role
 CANDIDATES = []
-SCORED_CANDIDATES = []
-HONEYPOTS = []
-STATS = {}
+SCORED_LISTS = {}
+HONEYPOT_LISTS = {}
+ROLE_STATS = {}
 
 def load_data():
-    global CANDIDATES, SCORED_CANDIDATES, HONEYPOTS, STATS
+    global CANDIDATES, SCORED_LISTS, HONEYPOT_LISTS, ROLE_STATS
     candidates_path = "./candidates.jsonl"
     
     if not os.path.exists(candidates_path):
-        # Check for gzipped file
         if os.path.exists(candidates_path + ".gz"):
             candidates_path = candidates_path + ".gz"
         else:
@@ -47,83 +46,95 @@ def load_data():
                 
     CANDIDATES = cands
     
-    # Pre-score all candidates
-    scored = []
-    honeypots = []
-    
-    for cand in cands:
-        score, data = calculate_score(cand)
-        if score == -1000.0:
-            # flagged as honeypot
-            honeypots.append({
-                "candidate_id": cand["candidate_id"],
-                "profile": cand["profile"],
-                "redrob_signals": cand["redrob_signals"],
-                "career_history": cand["career_history"],
-                "skills": cand["skills"],
-                "honeypot_reason": data,
-                "score": 0.0,
-                "is_honeypot": True
-            })
-        else:
-            scored.append({
-                "candidate_id": cand["candidate_id"],
-                "profile": cand["profile"],
-                "redrob_signals": cand["redrob_signals"],
-                "career_history": cand["career_history"],
-                "skills": cand["skills"],
-                "score": score,
-                "matched_skills": data,
-                "is_honeypot": False
-            })
-            
-    # Sort scored candidates to establish rank
-    scored.sort(key=lambda x: (-x["score"], x["candidate_id"]))
-    for i, item in enumerate(scored):
-        item["rank"] = i + 1
-        item["reasoning"] = generate_reasoning(item, i + 1, item["score"], item["matched_skills"])
+    # Initialize lists
+    for role_name in ROLE_CONFIGS.keys():
+        SCORED_LISTS[role_name] = []
+        HONEYPOT_LISTS[role_name] = []
+        ROLE_STATS[role_name] = {}
         
-    SCORED_CANDIDATES = scored
-    HONEYPOTS = honeypots
+    print(f"Loaded {len(CANDIDATES)} candidates. Pre-scoring for all roles...")
     
-    # Calculate stats
-    exp_list = [c["profile"].get("years_of_experience", 0.0) for c in scored]
-    avg_exp = sum(exp_list) / len(exp_list) if exp_list else 0
-    max_score = scored[0]["score"] if scored else 0.0
-    
-    work_modes = {}
-    for c in scored:
-        mode_pref = c["redrob_signals"].get("preferred_work_mode", "unknown")
-        work_modes[mode_pref] = work_modes.get(mode_pref, 0) + 1
+    # Pre-score for each role
+    for role_name in ROLE_CONFIGS.keys():
+        role_start = datetime.now()
+        scored = []
+        honeypots = []
         
-    notice_periods = {"0-30": 0, "31-60": 0, "61-90": 0, "90+": 0}
-    for c in scored:
-        notice = c["redrob_signals"].get("notice_period_days", 90)
-        if notice <= 30:
-            notice_periods["0-30"] += 1
-        elif notice <= 60:
-            notice_periods["31-60"] += 1
-        elif notice <= 90:
-            notice_periods["61-90"] += 1
-        else:
-            notice_periods["90+"] += 1
+        for cand in CANDIDATES:
+            score, data = calculate_score(cand, role_name)
+            if score == -1000.0:
+                honeypots.append({
+                    "candidate_id": cand["candidate_id"],
+                    "profile": cand["profile"],
+                    "redrob_signals": cand["redrob_signals"],
+                    "career_history": cand["career_history"],
+                    "skills": cand["skills"],
+                    "honeypot_reason": data,
+                    "score": 0.0,
+                    "is_honeypot": True
+                })
+            else:
+                scored.append({
+                    "candidate_id": cand["candidate_id"],
+                    "profile": cand["profile"],
+                    "redrob_signals": cand["redrob_signals"],
+                    "career_history": cand["career_history"],
+                    "skills": cand["skills"],
+                    "score": score,
+                    "matched_skills": data,
+                    "is_honeypot": False
+                })
+                
+        # Sort to establish rank
+        scored.sort(key=lambda x: (-x["score"], x["candidate_id"]))
+        for i, item in enumerate(scored):
+            item["rank"] = i + 1
+            item["reasoning"] = generate_reasoning(item, i + 1, item["score"], item["matched_skills"], role_name)
             
-    reloc_willing = sum(1 for c in scored if c["redrob_signals"].get("willing_to_relocate", False))
-    reloc_rate = (reloc_willing / len(scored)) * 100 if scored else 0
-    
-    STATS = {
-        "total_pool": len(CANDIDATES),
-        "valid_count": len(SCORED_CANDIDATES),
-        "honeypot_count": len(HONEYPOTS),
-        "avg_experience": round(avg_exp, 1),
-        "max_score": round(max_score, 4),
-        "work_modes": work_modes,
-        "notice_periods": notice_periods,
-        "relocation_rate": round(reloc_rate, 1)
-    }
-    
+        SCORED_LISTS[role_name] = scored
+        HONEYPOT_LISTS[role_name] = honeypots
+        
+        # Calculate stats for this role
+        exp_list = [c["profile"].get("years_of_experience", 0.0) for c in scored]
+        avg_exp = sum(exp_list) / len(exp_list) if exp_list else 0
+        max_score = scored[0]["score"] if scored else 0.0
+        
+        work_modes = {}
+        for c in scored:
+            mode_pref = c["redrob_signals"].get("preferred_work_mode", "unknown")
+            work_modes[mode_pref] = work_modes.get(mode_pref, 0) + 1
+            
+        notice_periods = {"0-30": 0, "31-60": 0, "61-90": 0, "90+": 0}
+        for c in scored:
+            notice = c["redrob_signals"].get("notice_period_days", 90)
+            if notice <= 30:
+                notice_periods["0-30"] += 1
+            elif notice <= 60:
+                notice_periods["31-60"] += 1
+            elif notice <= 90:
+                notice_periods["61-90"] += 1
+            else:
+                notice_periods["90+"] += 1
+                
+        reloc_willing = sum(1 for c in scored if c["redrob_signals"].get("willing_to_relocate", False))
+        reloc_rate = (reloc_willing / len(scored)) * 100 if scored else 0
+        
+        ROLE_STATS[role_name] = {
+            "total_pool": len(CANDIDATES),
+            "valid_count": len(scored),
+            "honeypot_count": len(honeypots),
+            "avg_experience": round(avg_exp, 1),
+            "max_score": round(max_score, 4),
+            "work_modes": work_modes,
+            "notice_periods": notice_periods,
+            "relocation_rate": round(reloc_rate, 1)
+        }
+        
+        role_dur = (datetime.now() - role_start).total_seconds()
+        print(f"  Scored {role_name} in {role_dur:.2f} seconds.")
+        
     duration = (datetime.now() - start_time).total_seconds()
-    print(f"Loaded and scored all records in {duration:.2f} seconds.")
+    print(f"Loaded and pre-scored all roles in {duration:.2f} seconds.")
 
 # Load the data on startup
 @app.on_event("startup")
@@ -131,8 +142,10 @@ def startup_event():
     load_data()
 
 @app.get("/api/stats")
-def get_stats():
-    return STATS
+def get_stats(role: str = Query("Senior AI Engineer")):
+    if role not in ROLE_STATS:
+        raise HTTPException(status_code=400, detail=f"Invalid role name. Must be one of: {list(ROLE_CONFIGS.keys())}")
+    return ROLE_STATS[role]
 
 @app.get("/api/candidates")
 def get_candidates(
@@ -144,9 +157,16 @@ def get_candidates(
     min_exp: Optional[float] = None,
     max_exp: Optional[float] = None,
     work_mode: Optional[str] = None,
-    exclude_honeypots: bool = Query(True)
+    exclude_honeypots: bool = Query(True),
+    role: str = Query("Senior AI Engineer")
 ):
-    source = SCORED_CANDIDATES if exclude_honeypots else (SCORED_CANDIDATES + HONEYPOTS)
+    if role not in ROLE_CONFIGS:
+        raise HTTPException(status_code=400, detail="Invalid role name")
+        
+    scored_list = SCORED_LISTS[role]
+    honeypot_list = HONEYPOT_LISTS[role]
+    
+    source = scored_list if exclude_honeypots else (scored_list + honeypot_list)
     
     filtered = source
     
@@ -180,7 +200,6 @@ def get_candidates(
     # 4. Sorting
     reverse_sort = (order == "desc")
     if sort_by == "rank":
-        # Honeypots don't have natural ranks, assign a high number so they sort last
         filtered.sort(key=lambda x: x.get("rank", 999999), reverse=reverse_sort)
     elif sort_by == "score":
         filtered.sort(key=lambda x: x.get("score", 0.0), reverse=reverse_sort)
@@ -201,7 +220,6 @@ def get_candidates(
     end_idx = start_idx + limit
     paginated = filtered[start_idx:end_idx]
     
-    # Return minimal representation to keep payload light, details retrieved via ID
     results = []
     for c in paginated:
         results.append({
@@ -229,23 +247,29 @@ def get_candidates(
     }
 
 @app.get("/api/candidates/{candidate_id}")
-def get_candidate_detail(candidate_id: str):
+def get_candidate_detail(candidate_id: str, role: str = Query("Senior AI Engineer")):
+    if role not in ROLE_CONFIGS:
+        raise HTTPException(status_code=400, detail="Invalid role name")
+        
     # Search scored list
-    for c in SCORED_CANDIDATES:
+    for c in SCORED_LISTS[role]:
         if c["candidate_id"] == candidate_id:
             return c
     # Search honeypots
-    for c in HONEYPOTS:
+    for c in HONEYPOT_LISTS[role]:
         if c["candidate_id"] == candidate_id:
             return c
             
     raise HTTPException(status_code=404, detail="Candidate not found")
 
 @app.post("/api/generate")
-def generate_submission():
+def generate_submission(role: str = Query("Senior AI Engineer")):
+    if role not in ROLE_CONFIGS:
+        raise HTTPException(status_code=400, detail="Invalid role name")
+        
     try:
-        # Run the ranker subprocess
-        cmd = ["python3", "rank.py", "--candidates", "./candidates.jsonl", "--out", "./submission.csv"]
+        # Run the ranker subprocess with role argument
+        cmd = ["python3", "rank.py", "--candidates", "./candidates.jsonl", "--out", "./submission.csv", "--role", role]
         res = subprocess.run(cmd, capture_output=True, text=True, check=True)
         
         # Run the validator subprocess
@@ -267,7 +291,6 @@ def generate_submission():
         )
 
 # Serve the static files
-# Make sure static directory exists
 os.makedirs("static", exist_ok=True)
 
 @app.get("/")

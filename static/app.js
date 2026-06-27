@@ -9,11 +9,15 @@ const state = {
     maxExp: null,
     workMode: "all",
     excludeHoneypots: true,
-    totalCount: 0
+    totalCount: 0,
+    role: "Senior AI Engineer"
 };
 
 // DOM Elements
 const elements = {
+    // Role selector
+    roleSelect: document.getElementById("role-select"),
+
     // Stats
     statTotalPool: document.getElementById("stat-total-pool"),
     statValidCount: document.getElementById("stat-valid-count"),
@@ -62,7 +66,7 @@ const elements = {
 // API Fetch Functions
 async function fetchStats() {
     try {
-        const res = await fetch("/api/stats");
+        const res = await fetch(`/api/stats?role=${encodeURIComponent(state.role)}`);
         const data = await res.json();
         
         elements.statTotalPool.textContent = data.total_pool.toLocaleString();
@@ -85,7 +89,8 @@ async function fetchCandidates() {
             limit: state.limit,
             sort_by: state.sortBy,
             order: state.order,
-            exclude_honeypots: state.excludeHoneypots
+            exclude_honeypots: state.excludeHoneypots,
+            role: state.role
         });
         
         if (state.search) queryParams.append("search", state.search);
@@ -117,7 +122,7 @@ async function fetchCandidates() {
 
 async function fetchCandidateDetail(id) {
     try {
-        const res = await fetch(`/api/candidates/${id}`);
+        const res = await fetch(`/api/candidates/${id}?role=${encodeURIComponent(state.role)}`);
         const data = await res.json();
         renderCandidateModal(data);
         elements.candidateModal.classList.add("active");
@@ -402,6 +407,14 @@ function renderCandidateModal(c) {
 
 // Filter Event Listeners
 function registerEventListeners() {
+    // Role selection
+    elements.roleSelect.addEventListener("change", (e) => {
+        state.role = e.target.value;
+        state.page = 1;
+        fetchStats();
+        fetchCandidates();
+    });
+
     // Search input debouncer
     let searchTimeout;
     elements.searchInput.addEventListener("input", (e) => {
@@ -455,6 +468,7 @@ function registerEventListeners() {
     
     // Reset Filters
     elements.btnResetFilters.addEventListener("click", () => {
+        elements.roleSelect.value = "Senior AI Engineer";
         elements.searchInput.value = "";
         elements.workModeFilter.value = "all";
         elements.sortSelect.value = "rank";
@@ -463,6 +477,7 @@ function registerEventListeners() {
         elements.maxExpInput.value = "";
         elements.honeypotToggle.checked = true;
         
+        state.role = "Senior AI Engineer";
         state.search = "";
         state.workMode = "all";
         state.sortBy = "rank";
@@ -472,6 +487,7 @@ function registerEventListeners() {
         state.excludeHoneypots = true;
         state.page = 1;
         
+        fetchStats();
         fetchCandidates();
     });
     
@@ -566,7 +582,7 @@ function registerEventListeners() {
             rankStep.classList.add("active");
             elements.pipelineConsoleLog.textContent += "Stage 1: Scanning pool & scoring ML features...\n";
             
-            const res = await fetch("/api/generate", { method: "POST" });
+            const res = await fetch(`/api/generate?role=${encodeURIComponent(state.role)}`, { method: "POST" });
             const data = await res.json();
             
             if (data.success) {

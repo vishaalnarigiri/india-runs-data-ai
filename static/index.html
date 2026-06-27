@@ -65,8 +65,13 @@
             <!-- Header section -->
             <header class="app-header">
                 <div class="header-title">
-                    <h1>Senior AI Engineer — Founding Team</h1>
-                    <p class="subtitle">Discovery and ranking dashboard for Pune/Noida hybrid role (5–9 Years experience)</p>
+                    <label for="role-select" style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--primary); display: block; margin-bottom: 0.15rem; letter-spacing: 0.05em;">Target Job Description</label>
+                    <select id="role-select" style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 800; border: none; background: transparent; padding: 0; margin: 0; color: var(--text-primary); cursor: pointer; outline: none; border-bottom: 2px dashed var(--border-color); padding-bottom: 0.1rem;">
+                        <option value="Senior AI Engineer" selected>Senior AI Engineer — Founding Team</option>
+                        <option value="Senior Backend Engineer">Senior Backend Engineer</option>
+                        <option value="Frontend Developer">Frontend Developer</option>
+                        <option value="Data Engineer">Data Engineer</option>
+                    </select>
                 </div>
                 <div class="header-actions">
                     <button class="btn btn-primary" id="btn-run-ranker">
