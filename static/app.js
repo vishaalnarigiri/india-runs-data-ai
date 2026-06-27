@@ -583,6 +583,11 @@ function registerEventListeners() {
                 if (data.is_valid) {
                     validateStep.className = "step success";
                     elements.pipelineConsoleLog.textContent += "\nValidation completed! submission.csv is 100% compliant with challenge spec.\n";
+                    
+                    // Auto-close modal after successful pipeline run so recruiter can see candidates
+                    setTimeout(() => {
+                        elements.submissionModal.classList.remove("active");
+                    }, 1800);
                 } else {
                     validateStep.className = "step error";
                     elements.pipelineConsoleLog.textContent += "\nValidation failed. Check specs formatting rules.\n";
